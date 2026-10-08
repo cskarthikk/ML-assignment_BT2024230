@@ -1,0 +1,77 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+
+\title{\textbf{Polynomial Regression}\\ \large Assignment Report}
+\author{Roll Number: BT2024230}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{tcolorbox}[colback=white, colframe=black, sharp corners]
+\textbf{Final Models}\\
+\textbf{var1} — total degree \textbf{5}, Ridge $\alpha = 2.0309$: \quad MSE = $0.4277$, \quad $R^2 = 0.9506$\\
+\textbf{var2} — total degree \textbf{10}, Ridge $\alpha = 1.4251$: \quad MSE = $0.2570$, \quad $R^2 = 0.9942$\\[1ex]
+\footnotesize{(Evaluated using rigorous 10-fold cross-validation. Metrics shown are the CV scores.)}
+\end{tcolorbox}
+
+\section{Methodology}
+
+\subsection{What the model is}
+When the problem statement specifies ``degree $d$'', it refers to the total degree: within any one term, the powers of the input features must sum to no more than $d$. Despite calculating polynomial terms, this remains \textbf{linear regression} because the unknowns (the coefficients $b_i$) only appear linearly. Every product (e.g., $x_1 x_2$ or $x_1^2$) is simply a number calculated directly from the data prior to fitting. Once these polynomial features are expanded and treated as individual columns, an ordinary linear fit is applied to the vastly expanded feature matrix.
+
+\subsection{The Parameter Sweep}
+The polynomial degree and the Ridge penalty strength $\alpha$ were evaluated jointly via cross-validation, as the optimal regularization penalty inherently depends on the complexity (degree) of the model. 
+
+The procedure was structured as follows:
+\begin{itemize}
+    \item \textbf{var1:} Degrees 1 to 10 were evaluated.
+    \item \textbf{var2:} Degrees 1 to 20 were evaluated.
+    \item For each degree, $\alpha$ was swept logarithmically across 40 distinct values between $10^{-4}$ and $10^{2}$. 
+    \item \textbf{10-Fold Cross-Validation:} The 1000 rows were shuffled and split into 10 folds. The model was trained on 9 folds and evaluated on the 10th, cycling through all combinations to generate a robust average Mean Squared Error (MSE) and $R^2$.
+\end{itemize}
+
+\subsection{Preprocessing Variants}
+Three preprocessing pipelines were tested strictly \textit{inside} the CV loops to prevent data leakage:
+\begin{enumerate}
+    \item[A.] No scaling.
+    \item[B.] \texttt{StandardScaler} applied \textit{after} \texttt{PolynomialFeatures}.
+    \item[C.] \texttt{StandardScaler} applied \textit{before} \texttt{PolynomialFeatures}.
+\end{enumerate}
+
+\section{Why Regularisation?}
+The feature space expands exponentially with degree. For \texttt{var1} (6 features), degree 10 generates 8,007 polynomial terms against a training fold of only 900 rows. This guarantees the $p > n$ problem, where the number of parameters vastly exceeds the observations. In this regime, Ordinary Least Squares (OLS) will fail violently by assigning enormous, chaotic coefficients that attempt to perfectly memorize the noise. 
+
+Ridge Regression solves this by minimizing:
+\[ \min_b \|\mathbf{y} - \mathbf{Xb}\|^2 + \alpha \sum b_j^2 \]
+The degree controls how many terms exist, while $\alpha$ aggressively shrinks the magnitudes of those terms, forcing the model to select a generalized pattern rather than overfitting.
+
+\section{Results \& The 1-SE Rule}
+
+Rather than blindly selecting the absolute minimum CV MSE (which can lead to over-complication due to selection bias on finite folds), the \textbf{One Standard Error (1-SE) rule} was utilized. We calculated the standard error of the MSE across the 10 folds, isolated the absolute minimum average MSE, and then confidently selected the simplest model (lowest degree) that fell within that standard error threshold.
+
+\subsection{Phase 1 — \texttt{var1}}
+\begin{itemize}
+    \item \textbf{Selected Configuration:} Degree 5, Ridge $\alpha = 2.0309$, Preprocessing A (No Scaler)
+    \item \textbf{Train MSE:} 0.1796 \quad|\quad \textbf{Train $R^2$:} 0.9795
+    \item \textbf{10-Fold CV MSE:} 0.4277 ($\pm 0.0837$) \quad|\quad \textbf{CV $R^2$:} 0.9506
+\end{itemize}
+For \texttt{var1}, the absolute minimum mathematically occurred at Degree 5. Since no simpler degree existed within the 1-SE margin (degrees 1–4 underfit severely), Degree 5 was definitively selected. Because the raw data was strictly bounded within $[-1, 1]$, the unscaled monomial terms did not explode, rendering \texttt{StandardScaler} unnecessary.
+
+\subsection{Phase 2 — \texttt{var2}}
+\begin{itemize}
+    \item \textbf{Selected Configuration:} Degree 10, Ridge $\alpha = 1.4251$, Preprocessing B (Scaler \textit{after} poly)
+    \item \textbf{Train MSE:} 0.1848 \quad|\quad \textbf{Train $R^2$:} 0.9960
+    \item \textbf{10-Fold CV MSE:} 0.2570 ($\pm 0.0354$) \quad|\quad \textbf{CV $R^2$:} 0.9942
+\end{itemize}
+While the assignment permitted up to degree 20, the cross-validation curve demonstrated an optimal plateau. The absolute minimum CV MSE ($0.2550$) was technically discovered at Degree 12. However, applying the strict 1-SE rule successfully backed the selection down to \textbf{Degree 10}, saving immense computational complexity while maintaining statistical parity. Scaling the features \textit{after} polynomial expansion (Variant B) was required here to effectively normalize the wildly varied magnitudes of the massive feature space before applying the Ridge penalty.
+
+\end{document}
