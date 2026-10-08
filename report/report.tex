@@ -66,6 +66,12 @@ Rather than blindly selecting the absolute minimum CV MSE (which can lead to ove
 \end{itemize}
 For \texttt{var1}, the absolute minimum mathematically occurred at Degree 5. Since no simpler degree existed within the 1-SE margin (degrees 1–4 underfit severely), Degree 5 was definitively selected. Because the raw data was strictly bounded within $[-1, 1]$, the unscaled monomial terms did not explode, rendering \texttt{StandardScaler} unnecessary.
 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{plots/var1_val_curve.png}
+    \caption{\texttt{var1} Validation Curve: The cross-validation error establishes a clear minimum at degree 5 before the complexity penalty outweighs the polynomial fit.}
+\end{figure}
+
 \subsection{Phase 2 — \texttt{var2}}
 \begin{itemize}
     \item \textbf{Selected Configuration:} Degree 10, Ridge $\alpha = 1.4251$, Preprocessing B (Scaler \textit{after} poly)
@@ -73,5 +79,11 @@ For \texttt{var1}, the absolute minimum mathematically occurred at Degree 5. Sin
     \item \textbf{10-Fold CV MSE:} 0.2570 ($\pm 0.0354$) \quad|\quad \textbf{CV $R^2$:} 0.9942
 \end{itemize}
 While the assignment permitted up to degree 20, the cross-validation curve demonstrated an optimal plateau. The absolute minimum CV MSE ($0.2550$) was technically discovered at Degree 12. However, applying the strict 1-SE rule successfully backed the selection down to \textbf{Degree 10}, saving immense computational complexity while maintaining statistical parity. Scaling the features \textit{after} polynomial expansion (Variant B) was required here to effectively normalize the wildly varied magnitudes of the massive feature space before applying the Ridge penalty.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{plots/var2_val_curve.png}
+    \caption{\texttt{var2} Validation Curve: Evaluated up to the absolute cap of degree 20, Ridge successfully handled the 1,771 features. However, the plateau clearly indicates no statistical benefit in exceeding degree 10.}
+\end{figure}
 
 \end{document}
