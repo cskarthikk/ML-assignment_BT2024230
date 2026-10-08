@@ -1,65 +1,77 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+import os
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import Ridge
-from sklearn.pipeline import Pipeline
-import os
 
-def load_config(var_name):
-    with open(f"{var_name}_best_config.txt", "r") as f:
-        d, a, prep = f.read().strip().split(",")
-    return int(d), float(a), prep
-
-def build_pipeline(d, a, prep):
-    steps = [('poly', PolynomialFeatures(degree=d, include_bias=False))]
-    if prep == 'C':
-        # Scaler before poly
-        steps.insert(0, ('scaler', StandardScaler()))
-    elif prep == 'B':
-        # Scaler after poly
-        steps.append(('scaler', StandardScaler()))
-    
-    steps.append(('model', Ridge(alpha=a, solver='auto')))
-    return Pipeline(steps)
-
-def process_var(var_name):
-    print(f"Processing {var_name}...")
-    train_path = f"../BT2024230_train_{var_name}.csv"
-    test_path = f"../BT2024230_test_{var_name}.csv"
-    
-    train = pd.read_csv(train_path)
-    test = pd.read_csv(test_path)
-    
-    y_train = train['y'].values
-    if var_name == 'var1':
-        features = ['x1','x2','x3','x4','x5','x6']
-    else:
-        features = ['x1','x2','x3']
-        
-    X_train = train[features].values
-    X_test = test[features].values
-    
-    d, a, prep = load_config(var_name)
-    print(f"Loaded config: Degree={d}, Alpha={a:.4f}, Prep={prep}")
-    
-    pipe = build_pipeline(d, a, prep)
-    pipe.fit(X_train, y_train)
-    y_pred = pipe.predict(X_test)
-    
-    out_df = pd.DataFrame({'y': y_pred})
-    
-    # Assertions for correctness
-    assert len(out_df) == len(test), f"Expected {len(test)} rows, got {len(out_df)}"
-    assert list(out_df.columns) == ['y'], f"Expected column 'y', got {list(out_df.columns)}"
-    assert not out_df.isna().any().any(), "Predictions contain NaN values"
-    
-    sub_dir = "../submissions"
+def generate_predictions():
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sub_dir = os.path.join(base_dir, 'submissions')
     os.makedirs(sub_dir, exist_ok=True)
     
-    out_path = os.path.join(sub_dir, f"BT2024230_pred_{var_name}.csv")
-    out_df.to_csv(out_path, index=False)
-    print(f"Saved {out_path} and passed all validation assertions.")
+    # -------------------------------------------------------------
+    # Phase 1: var1
+    # Best Model: Degree 5, Ridge alpha = 2.0309176, Variant A (Raw)
+    # -------------------------------------------------------------
+    print("--- Training and Predicting var1 ---")
+    train1_path = os.path.join(base_dir, 'BT2024230_train_var1.csv')
+    test1_path = os.path.join(base_dir, 'BT2024230_test_var1.csv')
+    
+    train1 = pd.read_csv(train1_path)
+    test1 = pd.read_csv(test1_path)
+    
+    features1 = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6']
+    X1_train = train1[features1].values
+    y1_train = train1['y'].values
+    X1_test = test1[features1].values
+    
+    poly1 = PolynomialFeatures(degree=5, include_bias=False)
+    X1_train_poly = poly1.fit_transform(X1_train)
+    X1_test_poly = poly1.transform(X1_test)
+    
+    model1 = Ridge(alpha=2.030917620904739, solver='auto')
+    model1.fit(X1_train_poly, y1_train)
+    
+    y1_pred = model1.predict(X1_test_poly)
+    df1_sub = pd.DataFrame({'y': y1_pred})
+    out1_path = os.path.join(sub_dir, 'BT2024230_pred_var1.csv')
+    df1_sub.to_csv(out1_path, index=False)
+    print(f"Saved: {out1_path} ({len(df1_sub)} rows)")
+    print(f"Stats: Mean={y1_pred.mean():.3f}, Std={y1_pred.std():.3f}, Min={y1_pred.min():.3f}, Max={y1_pred.max():.3f}")
+    
+    # -------------------------------------------------------------
+    # Phase 2: var2
+    # Best Model: Degree 10, Ridge alpha = 1.4251027, Variant B (Scale Poly)
+    # -------------------------------------------------------------
+    print("\n--- Training and Predicting var2 ---")
+    train2_path = os.path.join(base_dir, 'BT2024230_train_var2.csv')
+    test2_path = os.path.join(base_dir, 'BT2024230_test_var2.csv')
+    
+    train2 = pd.read_csv(train2_path)
+    test2 = pd.read_csv(test2_path)
+    
+    features2 = ['x1', 'x2', 'x3']
+    X2_train = train2[features2].values
+    y2_train = train2['y'].values
+    X2_test = test2[features2].values
+    
+    poly2 = PolynomialFeatures(degree=10, include_bias=False)
+    X2_train_poly = poly2.fit_transform(X2_train)
+    X2_test_poly = poly2.transform(X2_test)
+    
+    scaler2 = StandardScaler()
+    X2_train_poly_scaled = scaler2.fit_transform(X2_train_poly)
+    X2_test_poly_scaled = scaler2.transform(X2_test_poly)
+    
+    model2 = Ridge(alpha=1.4251026703029992, solver='auto')
+    model2.fit(X2_train_poly_scaled, y2_train)
+    
+    y2_pred = model2.predict(X2_test_poly_scaled)
+    df2_sub = pd.DataFrame({'y': y2_pred})
+    out2_path = os.path.join(sub_dir, 'BT2024230_pred_var2.csv')
+    df2_sub.to_csv(out2_path, index=False)
+    print(f"Saved: {out2_path} ({len(df2_sub)} rows)")
+    print(f"Stats: Mean={y2_pred.mean():.3f}, Std={y2_pred.std():.3f}, Min={y2_pred.min():.3f}, Max={y2_pred.max():.3f}")
 
-if __name__ == "__main__":
-    process_var('var1')
-    process_var('var2')
+if __name__ == '__main__':
+    generate_predictions()
