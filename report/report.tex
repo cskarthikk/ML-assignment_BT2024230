@@ -60,11 +60,28 @@ The degree controls how many terms exist, while $\alpha$ aggressively shrinks th
 Rather than blindly selecting the absolute minimum CV MSE (which can lead to over-complication due to selection bias on finite folds), the \textbf{One Standard Error (1-SE) rule} was utilized. We calculated the standard error of the MSE across the 10 folds, isolated the absolute minimum average MSE, and then confidently selected the simplest model (lowest degree) that fell within that standard error threshold.
 
 \subsection{Phase 1 — \texttt{var1}}
-\begin{itemize}
-    \item \textbf{Selected Configuration:} Degree 5, Ridge $\alpha = 2.0309$, Preprocessing A (No Scaler)
-    \item \textbf{Train MSE:} 0.1796 \quad|\quad \textbf{Train $R^2$:} 0.9795
-    \item \textbf{10-Fold CV MSE:} 0.4277 ($\pm 0.0837$) \quad|\quad \textbf{CV $R^2$:} 0.9506
-\end{itemize}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrr}
+\toprule
+Degree & Terms & Best $\alpha$ & CV MSE & CV $R^2$ \\
+\midrule
+1 & 6 & 100 & 8.1608 & 0.0595 \\
+2 & 27 & 8.377 & 2.7959 & 0.6763 \\
+3 & 83 & 2.894 & 0.9125 & 0.8940 \\
+4 & 209 & 2.894 & 0.6680 & 0.9227 \\
+\textbf{5} & \textbf{461} & \textbf{2.031} & \textbf{0.4277} & \textbf{0.9506} \\
+6 & 923 & 4.125 & 0.4893 & 0.9434 \\
+7 & 1715 & 8.377 & 0.4984 & 0.9423 \\
+8 & 3002 & 11.94 & 0.5650 & 0.9346 \\
+9 & 5004 & 17.01 & 0.5951 & 0.9311 \\
+10 & 8007 & 24.24 & 0.6632 & 0.9231 \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{var1}: Best ridge $\alpha$ for all ten permitted degrees.}
+\end{table}
+
 For \texttt{var1}, the absolute minimum mathematically occurred at Degree 5. Since no simpler degree existed within the 1-SE margin (degrees 1–4 underfit severely), Degree 5 was definitively selected. Because the raw data was strictly bounded within $[-1, 1]$, the unscaled monomial terms did not explode, rendering \texttt{StandardScaler} unnecessary.
 
 \begin{figure}[H]
@@ -73,12 +90,30 @@ For \texttt{var1}, the absolute minimum mathematically occurred at Degree 5. Sin
     \caption{\texttt{var1} Validation Curve: The cross-validation error establishes a clear minimum at degree 5 before the complexity penalty outweighs the polynomial fit.}
 \end{figure}
 
+\newpage
 \subsection{Phase 2 — \texttt{var2}}
-\begin{itemize}
-    \item \textbf{Selected Configuration:} Degree 10, Ridge $\alpha = 1.4251$, Preprocessing B (Scaler \textit{after} poly)
-    \item \textbf{Train MSE:} 0.1848 \quad|\quad \textbf{Train $R^2$:} 0.9960
-    \item \textbf{10-Fold CV MSE:} 0.2570 ($\pm 0.0354$) \quad|\quad \textbf{CV $R^2$:} 0.9942
-\end{itemize}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrrr|rrrrr}
+\toprule
+Deg & Terms & $\alpha$ & CV MSE & CV $R^2$ & Deg & Terms & $\alpha$ & CV MSE & CV $R^2$ \\
+\midrule
+1 & 3 & 4.125 & 33.3750 & 0.2638 & 11 & 363 & 2.031 & 0.2575 & 0.9942 \\
+2 & 9 & 2.031 & 20.7821 & 0.5366 & 12 & 454 & 0.2424 & 0.2550 & 0.9943 \\
+3 & 19 & 0.4924 & 10.2500 & 0.7747 & 13 & 559 & 0.3455 & 0.2575 & 0.9942 \\
+4 & 34 & 0.0001 & 3.6986 & 0.9182 & 14 & 679 & 0.3455 & 0.2600 & 0.9942 \\
+5 & 55 & 0.04125 & 1.5313 & 0.9665 & 15 & 815 & 0.3455 & 0.2628 & 0.9941 \\
+6 & 83 & 0.00702 & 0.5357 & 0.9880 & 16 & 968 & 0.4924 & 0.2675 & 0.9940 \\
+7 & 119 & 0.02894 & 0.3544 & 0.9921 & 17 & 1139 & 0.4924 & 0.2697 & 0.9939 \\
+8 & 164 & 0.08377 & 0.2717 & 0.9939 & 18 & 1329 & 0.3455 & 0.2749 & 0.9938 \\
+9 & 219 & 0.3455 & 0.2692 & 0.9939 & 19 & 1539 & 0.4924 & 0.2767 & 0.9938 \\
+\textbf{10} & \textbf{285} & \textbf{1.425} & \textbf{0.2570} & \textbf{0.9942} & 20 & 1770 & 0.3455 & 0.2813 & 0.9936 \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{var2}: Best ridge $\alpha$ for all twenty permitted degrees.}
+\end{table}
+
 While the assignment permitted up to degree 20, the cross-validation curve demonstrated an optimal plateau. The absolute minimum CV MSE ($0.2550$) was technically discovered at Degree 12. However, applying the strict 1-SE rule successfully backed the selection down to \textbf{Degree 10}, saving immense computational complexity while maintaining statistical parity. Scaling the features \textit{after} polynomial expansion (Variant B) was required here to effectively normalize the wildly varied magnitudes of the massive feature space before applying the Ridge penalty.
 
 \begin{figure}[H]
@@ -86,5 +121,26 @@ While the assignment permitted up to degree 20, the cross-validation curve demon
     \includegraphics[width=0.7\textwidth]{plots/var2_val_curve.png}
     \caption{\texttt{var2} Validation Curve: Evaluated up to the absolute cap of degree 20, Ridge successfully handled the 1,771 features. However, the plateau clearly indicates no statistical benefit in exceeding degree 10.}
 \end{figure}
+
+\section{Final Summary}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\toprule
+ & \texttt{var1} & \texttt{var2} \\
+\midrule
+Method & Ridge & Ridge \\
+Total degree & 5 & 10 \\
+$\alpha$ & 2.0309 & 1.4251 \\
+Preprocessing & None & Scaler After Poly \\
+\midrule
+Training MSE & 0.1796 & 0.1848 \\
+10-fold CV MSE & 0.4277 & 0.2570 \\
+10-fold CV $R^2$ & 0.9506 & 0.9942 \\
+\bottomrule
+\end{tabular}
+\caption{Final selected models.}
+\end{table}
 
 \end{document}
